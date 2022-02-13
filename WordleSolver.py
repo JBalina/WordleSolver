@@ -6,45 +6,54 @@ def readFile(txtFile):
         items = f.read().splitlines()
     return items
 
-def narrowDown(wordBank, letter):
+def narrowDown(wordBank, letter, status, index=0):
     newWordBank = []
+#     status = int(status)
+#     index = int(index)
     for word in wordBank:
-        if int(letter[1]) == 6:
-            if letter[0] not in word:
+        #if not in word
+        if status == "b":
+            if letter not in word:
                     newWordBank.append(word)
         else:
-            if int(letter[1]) == 5:
-                if letter[0] in word and letter[0] != word[int(letter[2])]:
+            #if in word but wrong placement
+            if status == "y":
+                if letter in word and letter != word[int(index)]:
                     newWordBank.append(word)
-            elif letter[0] == word[int(letter[1])]:
+            #check if matches placement
+            elif letter == word[int(index)]:
                 newWordBank.append(word)
     return newWordBank
+
+def check(ans, guess):
+    result = ""
+    for i in range(0,5):
+        if ans[i] == guess[i]:
+            result += "g"
+        elif guess[i] in ans:
+            result += "y"
+        else:
+            result += "b"
+    return result
 
 def wordle(words):
     ans = words[randint(0,len(words)-1)]
     tries = 0
     uInput = ""
     result = ""
-    while uInput != ans and tries != 5:
+    while uInput != ans and tries != 6:
         uInput = input()
         if len(uInput) != 5:
             print("Guess must be 5 letters long.")
         elif uInput not in words:
             print("Guess does not exist in dictionary.")
         else:
-            for i in range(0,5):
-                if ans[i] == uInput[i]:
-                    result += "g"
-                elif uInput[i] in ans:
-                    result += "y"
-                else:
-                    result += "b"
+            result = check(ans, uInput)
             print(result)
-            
             tries += 1
         if result == "ggggg":
             print("Your win!")
-        elif tries == 5:
+        elif tries == 6:
             print("Game over! The answer was " + ans)
         
         result = ""
@@ -55,14 +64,18 @@ def wordleSolver(words):
     while uInput != "Quit":
         uInput = input()
         if uInput != "Quit":
-            items = narrowDown(items, uInput.split(" "))
+            inputList = uInput.split(" ")
+            if len(inputList) == 3:
+                items = narrowDown(items, inputList[0],inputList[1],inputList[2])
+            else:
+                items = narrowDown(items, inputList[0], inputList[1])
             print(items)
 
 
 
-#words = readFile('wordle-answers-alphabetical.txt')
-words = readFile('sgb-words.txt')
-wordle(words)
+# words = readFile('wordle-answers-alphabetical.txt')
+# #words = readFile('sgb-words.txt')
+# wordleSolver(words)
 
 
 

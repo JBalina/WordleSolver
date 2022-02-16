@@ -70,12 +70,13 @@ def wordleSolver(words):
             else:
                 items = narrowDown(items, inputList[0], inputList[1])
             print(items)
+            print(len(items))
 
 
 
-# words = readFile('wordle-answers-alphabetical.txt')
-# #words = readFile('sgb-words.txt')
-# wordleSolver(words)
+#words = readFile('wordle-answers-alphabetical.txt')
+#words = readFile('sgb-words.txt')
+#wordleSolver(words)
 
 
 

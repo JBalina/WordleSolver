@@ -32,14 +32,15 @@ class Cube:
         elif self.status == "y":
             pygame.draw.rect(win, (255,255,100), (x, y, self.width, self.height))
         if self.value != "":
-            text = fnt.render(str(self.value), 1, (255, 255, 255))
+            text = fnt.render(str(self.value), True, (255, 255, 255))
             win.blit(text, (x+(self.width/3),y+(self.height/3)))
+            
     def set(self, val):
         self.value = val
 
 class Grid:
     
-    def __init__(self, width, height, wordBank, rows = 6, cols = 5):
+    def __init__(self, width, height, wordBank, solver, rows = 6, cols = 5):
         self.rows = rows
         self.cols = cols
         self.cubes = [[Cube("", i, j, width/cols, height/rows) for j in range(cols)] for i in range(rows)]
@@ -49,14 +50,22 @@ class Grid:
         self.cubes[0][0].selected = True
         self.wordBank = wordBank
         self.narrowedWB = wordBank
-        self.ans = wordBank[randint(0,len(wordBank)-1)]
+        self.solver = solver
+        if solver:
+            self.ans = ""
+        else:
+            self.ans = wordBank[randint(0,len(wordBank)-1)]
         
     def draw(self, win):
         for i in range(self.rows):
             for j in range(self.cols):
                 self.cubes[i][j].draw(win)
+        self.drawList(win, 600, 25)
+        
                 
     def updateCurrent(self, letter):
+        if self.solver:
+            self.cubes[self.selected[0]][self.selected[1]].status = "b"
         if self.selected[1] != self.cols-1:
             self.cubes[self.selected[0]][self.selected[1]].value = letter
             self.cubes[self.selected[0]][self.selected[1]].selected = False
@@ -66,7 +75,9 @@ class Grid:
             self.cubes[self.selected[0]][self.selected[1]].value = letter
             
     def enter(self):
-        if self.selected[1] == self.cols-1 and self.cubes[self.selected[0]][self.selected[1]].value != "":
+        if not (self.selected[1] == self.cols-1 and self.cubes[self.selected[0]][self.selected[1]].value != ""):
+            print("Not enough letters!")
+        elif not self.solver:
             word = ""
             for i in range(self.cols):
                 word += self.cubes[self.selected[0]][i].value
@@ -75,46 +86,127 @@ class Grid:
                 for i in range(self.cols):
                     self.cubes[self.selected[0]][i].status = result[i]
                     self.narrowedWB = narrowDown(self.narrowedWB, word[i], result[i], i)
+                if result == "ggggg":
+                    print("You win!")
+                    print("Press enter to play again!")
+                    return False
                 print(self.narrowedWB)
                 if self.selected[0] == self.rows-1:
                     print("Game over!")
+                    print("Press enter to play again!")
                     return False
                 self.cubes[self.selected[0]][self.selected[1]].selected = False
                 self.selected = (self.selected[0]+1, 0)
                 self.cubes[self.selected[0]][self.selected[1]].selected = True
             else:
                 print("Word not in word bank")
-        else:
-            print("Not enough letters!")
+        elif self.solver:
+            word = ""
+            for i in range(self.cols):
+                word += self.cubes[self.selected[0]][i].value
+            result = ""
+            for i in range(self.cols):
+                result += self.cubes[self.selected[0]][i].status
+                self.narrowedWB = narrowDown(self.narrowedWB, word[i], result[i], i)
+            if self.selected[0] == self.rows-1:
+                return False
+            self.cubes[self.selected[0]][self.selected[1]].selected = False
+            self.selected = (self.selected[0]+1, 0)
+            self.cubes[self.selected[0]][self.selected[1]].selected = True
         return True
+    
+    def backspace(self):
+        #self.cubes[self.selected[0]][self.selected[1]].value = ""
+        if self.selected[1] != 0:
+            if not (self.selected[1] != self.cols and self.cubes[self.selected[0]][self.selected[1]].value != ""):
+                self.cubes[self.selected[0]][self.selected[1]].selected = False
+                self.selected = (self.selected[0],self.selected[1]-1)
+                self.cubes[self.selected[0]][self.selected[1]].selected = True
+            self.cubes[self.selected[0]][self.selected[1]].value = ""
+            self.cubes[self.selected[0]][self.selected[1]].status = "n"
+                        
+    def up(self):
+        if self.selected[1] != 0:
+            x = self.selected[0]
+            y = 0
+            if self.selected[1] == self.cols-1 and self.cubes[self.selected[0]][self.selected[1]].value != "":
+                y = self.selected[1]
+            else:
+                y = self.selected[1]-1
+            if self.cubes[x][y].status == "n" or self.cubes[x][y].status == "b":
+                self.cubes[x][y].status = "g"
+            elif self.cubes[x][y].status == "g":
+                self.cubes[x][y].status = "y"
+            elif self.cubes[x][y].status == "y":
+                self.cubes[x][y].status = "b"
+                
+    def down(self):
+        if self.selected[1] != 0:
+            x = self.selected[0]
+            y = 0
+            if self.selected[1] == self.cols-1 and self.cubes[self.selected[0]][self.selected[1]].value != "":
+                y = self.selected[1]
+            else:
+                y = self.selected[1]-1
+            if self.cubes[x][y].status == "n" or self.cubes[x][y].status == "b":
+                self.cubes[x][y].status = "y"
+            elif self.cubes[x][y].status == "y":
+                self.cubes[x][y].status = "g"
+            elif self.cubes[x][y].status == "g":
+                self.cubes[x][y].status = "b"
+            
+    def drawList(self, win, x_pos, y_pos):
+        fontSize = 30
+        fnt = pygame.font.SysFont("comicsans", fontSize)
+        i = 0
+        while i < 20 and i < len(self.narrowedWB):
+            text = fnt.render(str(i+1)+": "+self.narrowedWB[i], True, (255, 255, 255))
+            win.blit(text, (x_pos, y_pos+(i*fontSize)))
+            i += 1
 
 
 def drawWindow(WIN, grid):
-    WIN.fill((75,75,75 ))
+    WIN.fill((75,75,75))
     grid.draw(WIN)
     pygame.display.update()
 
 def main():
-    WIDTH, HEIGHT = 740, 650
+    WIDTH, HEIGHT = 1000, 620
     WIN = pygame.display.set_mode((WIDTH,HEIGHT))
     FPS = 60
     clock = pygame.time.Clock()
     pygame.display.set_caption("Wordle Solver")
     wordBank = readFile('sgb-words.txt')
-    grid = Grid(500,540, wordBank)
+    solver = False
+    grid = Grid(500,540, wordBank, solver)
     run = True
+    playing = True
     while run:
         clock.tick(FPS)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-            elif event.type == pygame.KEYDOWN:
-                if pygame.key.name(event.key).isalpha() and len(pygame.key.name(event.key)) == 1:
-                    grid.updateCurrent(pygame.key.name(event.key))
-                elif event.key == pygame.K_RETURN:
-                    run = grid.enter()
-                #elif event.key == pygame.K_BACKSPACE:
-                    
+            elif playing:
+                if event.type == pygame.KEYDOWN:
+                    if pygame.key.name(event.key).isalpha() and len(pygame.key.name(event.key)) == 1:
+                        grid.updateCurrent(pygame.key.name(event.key))
+                    elif event.key == pygame.K_RETURN:
+                        playing = grid.enter()
+                    elif event.key == pygame.K_BACKSPACE:
+                        grid.backspace()
+                    elif event.key == pygame.K_ESCAPE:
+                        run = False
+                    elif event.key == pygame.K_UP:
+                        grid.up()
+                    elif event.key == pygame.K_DOWN:
+                        grid.down()
+            elif not playing:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        grid = Grid(500,540, wordBank, False)
+                        playing = True
+                    elif event.key == pygame.K_ESCAPE:
+                        run = False
         drawWindow(WIN, grid)
     pygame.quit()
     

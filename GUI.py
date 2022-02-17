@@ -1,7 +1,7 @@
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
-from WordleSolver import readFile, narrowDown, check
+from WordleSolver import readFile, narrowDown, check, allResultsRec, calcEntropy
 from random import randint
 
 pygame.init()
@@ -55,6 +55,14 @@ class Grid:
             self.ans = ""
         else:
             self.ans = wordBank[randint(0,len(wordBank)-1)]
+        self.resultsList = allResultsRec(cols)
+        self.narrowedEntropy = []
+#         narrowedEntropy = []
+#         for word in self.narrowedWB:
+#             print(word)
+#             narrowedEntropy.append([word, calcEntropy(word, self.resultsList,self.narrowedWB)])
+#         narrowedEntropy.sort(reverse = True,key = lambda i: i[1])
+#         self.narrowedEntropy = narrowedEntropy
         
     def draw(self, win):
         for i in range(self.rows):
@@ -95,6 +103,7 @@ class Grid:
                     print("Game over!")
                     print("Press enter to play again!")
                     return False
+                self.updateNarrowedEntropy()
                 self.cubes[self.selected[0]][self.selected[1]].selected = False
                 self.selected = (self.selected[0]+1, 0)
                 self.cubes[self.selected[0]][self.selected[1]].selected = True
@@ -110,6 +119,7 @@ class Grid:
                 self.narrowedWB = narrowDown(self.narrowedWB, word[i], result[i], i)
             if self.selected[0] == self.rows-1:
                 return False
+            self.updateNarrowedEntropy()
             self.cubes[self.selected[0]][self.selected[1]].selected = False
             self.selected = (self.selected[0]+1, 0)
             self.cubes[self.selected[0]][self.selected[1]].selected = True
@@ -154,14 +164,25 @@ class Grid:
                 self.cubes[x][y].status = "g"
             elif self.cubes[x][y].status == "g":
                 self.cubes[x][y].status = "b"
+                
+    def updateNarrowedEntropy(self):
+        self.narrowedEntropy = []
+        for word in self.narrowedWB:
+            print(word)
+            self.narrowedEntropy.append([word, calcEntropy(word, self.resultsList,self.narrowedWB)])
+        self.narrowedEntropy.sort(reverse = True,key = lambda i: i[1])
             
     def drawList(self, win, x_pos, y_pos):
         fontSize = 30
         fnt = pygame.font.SysFont("comicsans", fontSize)
+        x = x_pos
+        y = y_pos
         i = 0
-        while i < 20 and i < len(self.narrowedWB):
-            text = fnt.render(str(i+1)+": "+self.narrowedWB[i], True, (255, 255, 255))
-            win.blit(text, (x_pos, y_pos+(i*fontSize)))
+        while i < 20 and i < len(self.narrowedEntropy):
+            if i == 10:
+                x += 200
+            text = fnt.render(str(i+1)+": "+self.narrowedEntropy[i][0] + "     " + str(round(self.narrowedEntropy[i][1],2)), True, (255, 255, 255))
+            win.blit(text, (x, y+((i%10)*fontSize)))
             i += 1
 
 
@@ -177,6 +198,7 @@ def main():
     clock = pygame.time.Clock()
     pygame.display.set_caption("Wordle Solver")
     wordBank = readFile('sgb-words.txt')
+    #wordBank = readFile('wordle-answers-alphabetical.txt')
     solver = False
     grid = Grid(500,540, wordBank, solver)
     run = True

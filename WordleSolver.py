@@ -1,4 +1,5 @@
 from random import randint
+import math
 
 def readFile(txtFile):
     items = []
@@ -35,6 +36,56 @@ def check(ans, guess):
         else:
             result += "b"
     return result
+
+def allResults():
+    letters = ["b","g","y"]
+    resultList = []
+    for letter1 in letters:
+        for letter2 in letters:
+            for letter3 in letters:
+                for letter4 in letters:
+                    for letter5 in letters:
+                        resultList.append(letter1+letter2+letter3+letter4+letter5)
+    return resultList
+    
+def allResultsHelper(letters, resultList, string, digits):
+    if digits == 0:
+        return
+    else:
+        for letter in letters:
+            nextDigit = digits-1
+            nextWord = string+letter
+            if len(nextWord)==5:
+                resultList.append(nextWord)
+            allResultsHelper(letters, resultList, nextWord, nextDigit)
+        
+def allResultsRec(digits):
+    resultList = []
+    allResultsHelper(["b","g","y"], resultList, "", digits)
+    return resultList
+    
+def calcEntropy(word, resultsList, wordBank):
+    entropy = 0
+    for result in resultsList:
+        narrowedWB = wordBank
+        for i in range(len(word)): 
+            narrowedWB = narrowDown(narrowedWB, word[i], result[i], i)
+            i += 1
+        #narrowedWB = narrowDown(narrowedWB, word[i], result[i], i) for i in range(len(word))
+        p = len(narrowedWB)/len(wordBank)
+        if p != 0:
+            entropy += p*math.log2(1/p)
+    return entropy
+
+def narrowedEntropy(narrowedWB):
+    resultsList = allResultsRec(5)
+    narrowedEntropy = [[word, calcEntropy(word, resultsList, narrowedWB)] for word in narrowedWB]
+#     for word in narrowedWB:
+#         print(word)
+#         narrowedEntropy.append([word, calcEntropy(word, resultsList, narrowedWB)])
+    narrowedEntropy.sort(reverse = True,key = lambda i: i[1])
+    return narrowedEntropy
+        
 
 def wordle(words):
     ans = words[randint(0,len(words)-1)]
@@ -75,9 +126,21 @@ def wordleSolver(words):
 
 
 #words = readFile('wordle-answers-alphabetical.txt')
-#words = readFile('sgb-words.txt')
+words = readFile('sgb-words.txt')
 #wordleSolver(words)
+#allResultsRec(5)
+#print(calcEntropy("calms", allResultsRec(5), words))
 
+#testIt()
+
+
+# narrowedEntropy = narrowedEntropy(words)
+# f = open("narrowedEntropy-sgb-words.txt", "w")
+# for word in narrowedEntropy:
+#     f.write(word)
+# f.close()
+
+    
 
 
 

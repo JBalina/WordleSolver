@@ -1,8 +1,9 @@
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
-from WordleSolver import readFile, narrowDown, check, allResultsRec, calcEntropy
+from WordleSolver import readFile, readPresavedEntropy, narrowDown, narrowDownList, check, allResultsRec, calcEntropy
 from random import randint
+import time
 
 pygame.init()
 
@@ -40,7 +41,7 @@ class Cube:
 
 class Grid:
     
-    def __init__(self, width, height, wordBank, solver, rows = 6, cols = 5):
+    def __init__(self, width, height, wordBankName, solver, rows = 6, cols = 5):
         self.rows = rows
         self.cols = cols
         self.cubes = [[Cube("", i, j, width/cols, height/rows) for j in range(cols)] for i in range(rows)]
@@ -48,27 +49,23 @@ class Grid:
         self.height = height
         self.selected = (0,0)
         self.cubes[0][0].selected = True
-        self.wordBank = wordBank
-        self.narrowedWB = wordBank
+        self.wordBank = readFile(wordBankName)
+        self.narrowedWB = self.wordBank
         self.solver = solver
         if solver:
             self.ans = ""
         else:
-            self.ans = wordBank[randint(0,len(wordBank)-1)]
+            self.ans = self.wordBank[randint(0,len(self.wordBank)-1)]
         self.resultsList = allResultsRec(cols)
-        self.narrowedEntropy = []
-#         narrowedEntropy = []
-#         for word in self.narrowedWB:
-#             print(word)
-#             narrowedEntropy.append([word, calcEntropy(word, self.resultsList,self.narrowedWB)])
-#         narrowedEntropy.sort(reverse = True,key = lambda i: i[1])
-#         self.narrowedEntropy = narrowedEntropy
+        self.narrowedEntropy = readPresavedEntropy("narrowedEntropy-"+wordBankName)
+        self.message = []
         
     def draw(self, win):
         for i in range(self.rows):
             for j in range(self.cols):
                 self.cubes[i][j].draw(win)
         self.drawList(win, 600, 25)
+        self.drawMessage(win, 600, 350)
         
                 
     def updateCurrent(self, letter):
@@ -84,31 +81,32 @@ class Grid:
             
     def enter(self):
         if not (self.selected[1] == self.cols-1 and self.cubes[self.selected[0]][self.selected[1]].value != ""):
-            print("Not enough letters!")
+            self.message = ["Not enough letters!"]
         elif not self.solver:
             word = ""
             for i in range(self.cols):
                 word += self.cubes[self.selected[0]][i].value
             if(word in self.wordBank):
                 result = check(self.ans, word)
+                #print(result)
+                #self.narrowedWB = narrowDownList(self.narrowedWB, word, result)
                 for i in range(self.cols):
                     self.cubes[self.selected[0]][i].status = result[i]
                     self.narrowedWB = narrowDown(self.narrowedWB, word[i], result[i], i)
                 if result == "ggggg":
-                    print("You win!")
-                    print("Press enter to play again!")
+                    self.message = ["You win!", "Press enter to play again!"]
                     return False
-                print(self.narrowedWB)
+                print(len(self.narrowedWB))
                 if self.selected[0] == self.rows-1:
-                    print("Game over!")
-                    print("Press enter to play again!")
+                    self.message = ["Game over!", "Press enter to play again!"]
                     return False
                 self.updateNarrowedEntropy()
                 self.cubes[self.selected[0]][self.selected[1]].selected = False
                 self.selected = (self.selected[0]+1, 0)
                 self.cubes[self.selected[0]][self.selected[1]].selected = True
+                self.message = []
             else:
-                print("Word not in word bank")
+                self.message = ["Word not in word bank"]
         elif self.solver:
             word = ""
             for i in range(self.cols):
@@ -123,6 +121,7 @@ class Grid:
             self.cubes[self.selected[0]][self.selected[1]].selected = False
             self.selected = (self.selected[0]+1, 0)
             self.cubes[self.selected[0]][self.selected[1]].selected = True
+            self.message = ["Word not in word bank"]
         return True
     
     def backspace(self):
@@ -166,11 +165,14 @@ class Grid:
                 self.cubes[x][y].status = "b"
                 
     def updateNarrowedEntropy(self):
-        self.narrowedEntropy = []
-        for word in self.narrowedWB:
-            print(word)
-            self.narrowedEntropy.append([word, calcEntropy(word, self.resultsList,self.narrowedWB)])
+        start = time.time()
+        self.narrowedEntropy = [[word, calcEntropy(word, self.resultsList,self.narrowedWB)] for word in self.narrowedWB]
+#         for word in self.narrowedWB:
+#             print(word)
+#             self.narrowedEntropy.append([word, calcEntropy(word, self.resultsList,self.narrowedWB)])
         self.narrowedEntropy.sort(reverse = True,key = lambda i: i[1])
+        end = time.time()
+        print("updateNarrowedEntropy: " + str(end-start))
             
     def drawList(self, win, x_pos, y_pos):
         fontSize = 30
@@ -185,7 +187,13 @@ class Grid:
             win.blit(text, (x, y+((i%10)*fontSize)))
             i += 1
 
-
+    def drawMessage(self, win, x_pos, y_pos):
+        fontSize = 30
+        fnt = pygame.font.SysFont("comicsans", fontSize)
+        for i in range(len(self.message)):
+            text = fnt.render(self.message[i], True, (255, 255, 255))
+            win.blit(text, (x_pos,y_pos+(i+1)*fontSize))
+        
 def drawWindow(WIN, grid):
     WIN.fill((75,75,75))
     grid.draw(WIN)
@@ -197,10 +205,11 @@ def main():
     FPS = 60
     clock = pygame.time.Clock()
     pygame.display.set_caption("Wordle Solver")
-    wordBank = readFile('sgb-words.txt')
+#     wordBank = readFile('sgb-words.txt')
     #wordBank = readFile('wordle-answers-alphabetical.txt')
+    wordBankName = "sgb-words.txt"
     solver = False
-    grid = Grid(500,540, wordBank, solver)
+    grid = Grid(500,540, wordBankName, solver)
     run = True
     playing = True
     while run:
@@ -225,7 +234,7 @@ def main():
             elif not playing:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
-                        grid = Grid(500,540, wordBank, False)
+                        grid = Grid(500,540, wordBankName, False)
                         playing = True
                     elif event.key == pygame.K_ESCAPE:
                         run = False

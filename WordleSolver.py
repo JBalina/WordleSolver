@@ -1,5 +1,6 @@
 from random import randint
 import math
+import time
 
 def readFile(txtFile):
     items = []
@@ -7,24 +8,63 @@ def readFile(txtFile):
         items = f.read().splitlines()
     return items
 
+def readPresavedEntropy(txtFile):
+    items = []
+    f = open(txtFile,'r')
+    lines = f.readlines()
+    for line in lines:
+        item = []
+        lineSplit = line.split(",")
+        #print(lineSplit)
+        item.append(lineSplit[0])
+        item.append(float(lineSplit[1][:-1]))
+        items.append(item)
+    f.close()
+    return items
+    
 def narrowDown(wordBank, letter, status, index=0):
-    newWordBank = []
+    return [word for word in wordBank if (status == "b" and letter not in word) or (status == "y" and letter in word and letter != word[int(index)]) or (status == "g" and letter == word[int(index)])]
 #     status = int(status)
 #     index = int(index)
-    for word in wordBank:
-        #if not in word
-        if status == "b":
-            if letter not in word:
-                    newWordBank.append(word)
-        else:
-            #if in word but wrong placement
-            if status == "y":
-                if letter in word and letter != word[int(index)]:
-                    newWordBank.append(word)
-            #check if matches placement
-            elif letter == word[int(index)]:
-                newWordBank.append(word)
-    return newWordBank
+#     for word in wordBank:
+#         #if not in word
+#         if status == "b":
+#             if letter not in word:
+#                     newWordBank.append(word)
+#         else:
+#             #if in word but wrong placement
+#             if status == "y":
+#                 if letter in word and letter != word[int(index)]:
+#                     newWordBank.append(word)
+#             #check if matches placement
+#             elif letter == word[int(index)]:
+#                 newWordBank.append(word)
+#     return newWordBank
+
+def narrowDownList(wordBank, guess, result):
+#     start = time.time()
+#     narrowedWB = wordBank
+#     for i in range(len(word)): 
+#         narrowedWB = narrowDown(narrowedWB, word[i], result[i], i)
+#     end = time.time()
+#     print("narrowDownList: " + str(end-start))
+#     return narrowedWB
+    return [word for word in wordBank if ((result[0] == "b" and guess[0] not in word) or 
+            (result[0] == "y" and guess[0] in word and guess[0] != word[0]) or 
+            (result[0] == "g" and guess[0] == word[0])) and
+                                          ((result[1] == "b" and guess[1] not in word) or 
+            (result[1] == "y" and guess[1] in word and guess[1] != word[1]) or 
+            (result[1] == "g" and guess[1] == word[1])) and
+                                          ((result[2] == "b" and guess[2] not in word) or 
+            (result[2] == "y" and guess[2] in word and guess[2] != word[2]) or 
+            (result[2] == "g" and guess[2] == word[2])) and
+                                          ((result[3] == "b" and guess[3] not in word) or 
+            (result[3] == "y" and guess[3] in word and guess[3] != word[3]) or 
+            (result[3] == "g" and guess[3] == word[3])) and
+                                          ((result[4] == "b" and guess[4] not in word) or 
+            (result[4] == "y" and guess[4] in word and guess[4] != word[4]) or 
+            (result[4] == "g" and guess[4] == word[4]))]
+
 
 def check(ans, guess):
     result = ""
@@ -36,6 +76,7 @@ def check(ans, guess):
         else:
             result += "b"
     return result
+    #return "".join("g" if ans[i] == guess[i] else "y" if guess[i] in ans else "b" for i in range(0,5))
 
 def allResults():
     letters = ["b","g","y"]
@@ -64,18 +105,28 @@ def allResultsRec(digits):
     allResultsHelper(["b","g","y"], resultList, "", digits)
     return resultList
     
+    
+    #len(narrowDownList(wordBank, word, result))/len(wordBank)
 def calcEntropy(word, resultsList, wordBank):
-    entropy = 0
-    for result in resultsList:
-        narrowedWB = wordBank
-        for i in range(len(word)): 
-            narrowedWB = narrowDown(narrowedWB, word[i], result[i], i)
-            i += 1
-        #narrowedWB = narrowDown(narrowedWB, word[i], result[i], i) for i in range(len(word))
-        p = len(narrowedWB)/len(wordBank)
-        if p != 0:
-            entropy += p*math.log2(1/p)
-    return entropy
+    #entropyList = [(len(narrowDownList(wordBank, word, result))/len(wordBank))*math.log2(1/(len(narrowDownList(wordBank, word, result))/len(wordBank))) if (len(narrowDownList(wordBank, word, result))/len(wordBank)) != 0 else 0 for result in resultsList]
+#     entropy = 0
+#     for result in resultsList:
+#         narrowedWB = narrowDownList(wordBank, word, result)
+# #         for i in range(len(word)): 
+# #             narrowedWB = narrowDown(narrowedWB, word[i], result[i], i)
+#             #i += 190[
+#             
+#         #narrowedWB = [narrowDown(narrowedWB, word[i], result[i], i) for i in range(len(word))]
+#         p = len(narrowedWB)/len(wordBank)
+#         if p != 0:
+#             entropy += p*math.log2(1/p)
+#     start = time.time() 
+#    x = sum((len(narrowDownList(wordBank, word, result))/len(wordBank))*math.log2(1/(len(narrowDownList(wordBank, word, result))/len(wordBank))) if (len(narrowDownList(wordBank, word, result))/len(wordBank)) != 0 else 0 for result in resultsList)
+    return sum((p)*math.log2(1/(p)) if (p) != 0 else 0 for result in resultsList if (p := len(narrowDownList(wordBank, word, result))/len(wordBank)))
+# 
+#     end = time.time()
+#     print("calcEntropy: " + str(end-start))
+#     return x
 
 def narrowedEntropy(narrowedWB):
     resultsList = allResultsRec(5)
@@ -129,16 +180,10 @@ def wordleSolver(words):
 words = readFile('sgb-words.txt')
 #wordleSolver(words)
 #allResultsRec(5)
-#print(calcEntropy("calms", allResultsRec(5), words))
+#print(ca0lcEntropy("calms", allResultsRec(5), words))
 
 #testIt()
 
-
-# narrowedEntropy = narrowedEntropy(words)
-# f = open("narrowedEntropy-sgb-words.txt", "w")
-# for word in narrowedEntropy:
-#     f.write(word)
-# f.close()
 
     
 

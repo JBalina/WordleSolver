@@ -15,15 +15,14 @@ class Cube:
         self.width = width
         self.height = height
         self.selected = False
-        #0 = not yet submitted
-        #1 = green/correct letter and placement
-        #2 = yellow/correct letter wrong placement
-        #3 = black/incorrect letter
+        #"" = not yet submitted
+        #g = green/correct letter and placement
+        #y = yellow/correct letter wrong placement
+        #b = black/incorrect letter
         self.status = "n";
 
     def draw(self, win):
         fnt = pygame.font.SysFont("comicsans", 80)
-        
         x = (self.col) * (self.width+5)+20
         y = (self.row) * (self.height+5)+20
         if self.status == "n":
@@ -88,7 +87,6 @@ class Grid:
                 word += self.cubes[self.selected[0]][i].value
             if(word in self.wordBank):
                 result = check(self.ans, word)
-                #print(result)
                 #self.narrowedWB = narrowDownList(self.narrowedWB, word, result)
                 for i in range(self.cols):
                     self.cubes[self.selected[0]][i].status = result[i]
@@ -125,7 +123,6 @@ class Grid:
         return True
     
     def backspace(self):
-        #self.cubes[self.selected[0]][self.selected[1]].value = ""
         if self.selected[1] != 0:
             if not (self.selected[1] != self.cols and self.cubes[self.selected[0]][self.selected[1]].value != ""):
                 self.cubes[self.selected[0]][self.selected[1]].selected = False
@@ -167,9 +164,6 @@ class Grid:
     def updateNarrowedEntropy(self):
         start = time.time()
         self.narrowedEntropy = [[word, calcEntropy(word, self.resultsList,self.narrowedWB)] for word in self.narrowedWB]
-#         for word in self.narrowedWB:
-#             print(word)
-#             self.narrowedEntropy.append([word, calcEntropy(word, self.resultsList,self.narrowedWB)])
         self.narrowedEntropy.sort(reverse = True,key = lambda i: i[1])
         end = time.time()
         print("updateNarrowedEntropy: " + str(end-start))
@@ -205,8 +199,6 @@ def main():
     FPS = 60
     clock = pygame.time.Clock()
     pygame.display.set_caption("Wordle Solver")
-#     wordBank = readFile('sgb-words.txt')
-    #wordBank = readFile('wordle-answers-alphabetical.txt')
     wordBankName = "sgb-words.txt"
     solver = False
     grid = Grid(500,540, wordBankName, solver)

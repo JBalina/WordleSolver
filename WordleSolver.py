@@ -1,26 +1,19 @@
 from random import randint
 import math
-import time
 
 def readFile(txtFile):
-    items = []
     with open(txtFile,'r') as f:
-        items = f.read().splitlines()
-    return items
+        return f.read().splitlines()
 
 def readPresavedEntropy(txtFile):
-    items = []
-    f = open(txtFile,'r')
-    lines = f.readlines()
-    for line in lines:
-        item = []
-        lineSplit = line.split(",")
-        #print(lineSplit)
-        item.append(lineSplit[0])
-        item.append(float(lineSplit[1][:-1]))
-        items.append(item)
-    f.close()
-    return items
+    with open(txtFile,'r') as f:
+        return [[lineSplit[i] if i == 0 else float(lineSplit[1][:-1]) for i in range(2) if (lineSplit := line.split(","))] for line in f.readlines()]
+#     for line in lines:
+#         item = [lineSplit[i] if i == 0 else float(lineSplit[1][:-1]) for i in range(2) if (lineSplit := line.split(","))]
+#         #print(lineSplit)
+# #         item.append(lineSplit[0])
+# #         item.append(float(lineSplit[1][:-1]))
+#         items.append(item)
     
 def narrowDown(wordBank, letter, status, index=0):
     return [word for word in wordBank if (status == "b" and letter not in word) or (status == "y" and letter in word and letter != word[int(index)]) or (status == "g" and letter == word[int(index)])]
@@ -42,13 +35,6 @@ def narrowDown(wordBank, letter, status, index=0):
 #     return newWordBank
 
 def narrowDownList(wordBank, guess, result):
-#     start = time.time()
-#     narrowedWB = wordBank
-#     for i in range(len(word)): 
-#         narrowedWB = narrowDown(narrowedWB, word[i], result[i], i)
-#     end = time.time()
-#     print("narrowDownList: " + str(end-start))
-#     return narrowedWB
     return [word for word in wordBank if ((result[0] == "b" and guess[0] not in word) or 
             (result[0] == "y" and guess[0] in word and guess[0] != word[0]) or 
             (result[0] == "g" and guess[0] == word[0])) and
@@ -64,19 +50,25 @@ def narrowDownList(wordBank, guess, result):
                                           ((result[4] == "b" and guess[4] not in word) or 
             (result[4] == "y" and guess[4] in word and guess[4] != word[4]) or 
             (result[4] == "g" and guess[4] == word[4]))]
-
+#     start = time.time()
+#     narrowedWB = wordBank
+#     for i in range(len(word)): 
+#         narrowedWB = narrowDown(narrowedWB, word[i], result[i], i)
+#     end = time.time()
+#     print("narrowDownList: " + str(end-start))
+#     return narrowedWB
 
 def check(ans, guess):
-    result = ""
-    for i in range(0,5):
-        if ans[i] == guess[i]:
-            result += "g"
-        elif guess[i] in ans:
-            result += "y"
-        else:
-            result += "b"
-    return result
-    #return "".join("g" if ans[i] == guess[i] else "y" if guess[i] in ans else "b" for i in range(0,5))
+#     result = ""
+#     for i in range(0,5):
+#         if ans[i] == guess[i]:
+#             result += "g"
+#         elif guess[i] in ans:
+#             result += "y"
+#         else:
+#             result += "b"
+#     return result
+    return "".join("g" if ans[i] == guess[i] else "y" if guess[i] in ans else "b" for i in range(0,5))
 
 def allResults():
     letters = ["b","g","y"]
@@ -106,7 +98,6 @@ def allResultsRec(digits):
     return resultList
     
     
-    #len(narrowDownList(wordBank, word, result))/len(wordBank)
 def calcEntropy(word, resultsList, wordBank):
     #entropyList = [(len(narrowDownList(wordBank, word, result))/len(wordBank))*math.log2(1/(len(narrowDownList(wordBank, word, result))/len(wordBank))) if (len(narrowDownList(wordBank, word, result))/len(wordBank)) != 0 else 0 for result in resultsList]
 #     entropy = 0
@@ -131,12 +122,8 @@ def calcEntropy(word, resultsList, wordBank):
 def narrowedEntropy(narrowedWB):
     resultsList = allResultsRec(5)
     narrowedEntropy = [[word, calcEntropy(word, resultsList, narrowedWB)] for word in narrowedWB]
-#     for word in narrowedWB:
-#         print(word)
-#         narrowedEntropy.append([word, calcEntropy(word, resultsList, narrowedWB)])
     narrowedEntropy.sort(reverse = True,key = lambda i: i[1])
     return narrowedEntropy
-        
 
 def wordle(words):
     ans = words[randint(0,len(words)-1)]
@@ -157,7 +144,6 @@ def wordle(words):
             print("Your win!")
         elif tries == 6:
             print("Game over! The answer was " + ans)
-        
         result = ""
 
 def wordleSolver(words):
@@ -174,15 +160,6 @@ def wordleSolver(words):
             print(items)
             print(len(items))
 
-
-
-#words = readFile('wordle-answers-alphabetical.txt')
-words = readFile('sgb-words.txt')
-#wordleSolver(words)
-#allResultsRec(5)
-#print(ca0lcEntropy("calms", allResultsRec(5), words))
-
-#testIt()
 
 
     

@@ -7,6 +7,7 @@ import time
 
 pygame.init()
 
+#A single cube object to be drawn. Each cube will be able to hold a letter and a status.
 class Cube:
     def __init__(self, value, row, col, width, height):
         self.value = value
@@ -38,8 +39,8 @@ class Cube:
     def set(self, val):
         self.value = val
 
+#Grid to hold the cubes into a 6x5 grid. Also displays the list of items and their entropy.
 class Grid:
-    
     def __init__(self, width, height, wordBankName, solver, rows = 6, cols = 5):
         self.rows = rows
         self.cols = cols
@@ -66,7 +67,8 @@ class Grid:
         self.drawList(win, 600, 25)
         self.drawMessage(win, 600, 350)
         
-                
+    #updates the letter of a cube after the user has typed a letter in
+    #Also updates where the cursor is (which cube is currently selected)
     def updateCurrent(self, letter):
         if self.solver:
             self.cubes[self.selected[0]][self.selected[1]].status = "b"
@@ -78,6 +80,13 @@ class Grid:
         elif self.selected[1] == self.cols-1 and self.cubes[self.selected[0]][self.selected[1]].value == "":
             self.cubes[self.selected[0]][self.selected[1]].value = letter
             
+    #Goes over the cases when the user hits the enter button.
+    #It will first check if the user inputed a full word. If it is in solver mode, pressing
+    #enter will update the entropy list with the input given. If not in solver mode, it will
+    #check first if the word is in the word bank. Then it will compare the guess with the answer
+    #and form a result as well as update the colors of the cubes to match the result. It will 
+    #use the result to update the entropy list. If the user wins or loses, it will prompt the
+    #user to press enter to play again.
     def enter(self):
         if not (self.selected[1] == self.cols-1 and self.cubes[self.selected[0]][self.selected[1]].value != ""):
             self.message = ["Not enough letters!"]
@@ -119,9 +128,11 @@ class Grid:
             self.cubes[self.selected[0]][self.selected[1]].selected = False
             self.selected = (self.selected[0]+1, 0)
             self.cubes[self.selected[0]][self.selected[1]].selected = True
-            self.message = ["Word not in word bank"]
+            #self.message = ["Word not in word bank"]
         return True
     
+    #This function erases the letter in the current block and moves the cursor back,
+    #unless the cursor is already in the first cube.
     def backspace(self):
         if self.selected[1] != 0:
             if not (self.selected[1] != self.cols and self.cubes[self.selected[0]][self.selected[1]].value != ""):
@@ -131,6 +142,7 @@ class Grid:
             self.cubes[self.selected[0]][self.selected[1]].value = ""
             self.cubes[self.selected[0]][self.selected[1]].status = "n"
                         
+    #Only usable in solve mode. Change the state of the current cube.
     def up(self):
         if self.selected[1] != 0:
             x = self.selected[0]
@@ -146,6 +158,7 @@ class Grid:
             elif self.cubes[x][y].status == "y":
                 self.cubes[x][y].status = "b"
                 
+    #Only usable in solve mode. Change the state of the current cube.
     def down(self):
         if self.selected[1] != 0:
             x = self.selected[0]
@@ -160,7 +173,8 @@ class Grid:
                 self.cubes[x][y].status = "g"
             elif self.cubes[x][y].status == "g":
                 self.cubes[x][y].status = "b"
-                
+    
+    #Updates the entropy list. Narrows down the answers and sorts the list by its entropy.
     def updateNarrowedEntropy(self):
         start = time.time()
         self.narrowedEntropy = [[word, calcEntropy(word, self.resultsList,self.narrowedWB)] for word in self.narrowedWB]
@@ -200,7 +214,7 @@ def main():
     clock = pygame.time.Clock()
     pygame.display.set_caption("Wordle Solver")
     wordBankName = "sgb-words.txt"
-    solver = False
+    solver = True
     grid = Grid(500,540, wordBankName, solver)
     run = True
     playing = True
@@ -219,9 +233,9 @@ def main():
                         grid.backspace()
                     elif event.key == pygame.K_ESCAPE:
                         run = False
-                    elif event.key == pygame.K_UP:
+                    elif event.key == pygame.K_UP and grid.solver:
                         grid.up()
-                    elif event.key == pygame.K_DOWN:
+                    elif event.key == pygame.K_DOWN and grid.solver:
                         grid.down()
             elif not playing:
                 if event.type == pygame.KEYDOWN:
